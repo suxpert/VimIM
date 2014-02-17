@@ -9,7 +9,7 @@ I can only fix few of them.
 
 Also, it seems that MXJ et al. were not working on it for a long time,
 I was almost the only one who is still patching it.
-(But I do not have the permission to change the code in the resp.
+(But I do not have the permission to change the code in the repo.
 So patches are givin as attachments.)
 
 As I have pointed in the discuss, the *best* way to deal with vim and IME

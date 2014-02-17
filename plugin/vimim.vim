@@ -5,7 +5,7 @@
 "               Omni completion introduced from version 7.
 "               Copyright (C) 2013-2014 LiTuX, all wrongs reserved.
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-01-27 18:01:02
+" Last Change:  2014-02-18 00:26:16
 " Version:      0.0.0
 "
 " Install:      unpack all into your plugin folder, that's all.
@@ -24,50 +24,128 @@ endif
 
 scriptencoding utf8
 let g:vimim_digit_single = {
-\   'simplified':  ['〇一二三四五六七八九', '零壹贰叁肆伍陆柒捌玖'],
-\   'traditional': ['〇一二三四五六七八九', '零壹貳叄肆伍陸柒捌玖'],
+\   'simplified':  [split('〇一二三四五六七八九零两', '\zs'),
+\                   split('零壹贰叁肆伍陆柒捌玖', '\zs')],
+\   'traditional': [split('〇一二三四五六七八九零', '\zs'),
+\                   split('零壹貳叄肆伍陸柒捌玖', '\zs')],
 \ }
 let g:vimim_digit_more = ['〇零零', '一壹弌', '二贰弍貳', '三叁弎參', '四肆', ]
 let g:vimim_digit_separator = {
-\   'simplified':  ['十百千', '拾佰仟'],
-\   'traditional': ['十百千', '拾佰仟']
+\   'simplified':  [split('十百千', '\zs'), split('拾佰仟', '\zs')],
+\   'traditional': [split('十百千', '\zs'), split('拾佰仟', '\zs')]
 \ }
 let g:vimim_digit_group = {
-\   'simplified':  ['万亿', '万亿'],
-\   'traditional': ['萬億', '萬億']
+\   'simplified':  [split('万亿', '\zs'), split('万亿', '\zs')],
+\   'traditional': [split('萬億', '\zs'), split('萬億', '\zs')]
 \ }
 scriptencoding
 
+function! vimim#digit(num, upper)
+    return g:vimim_digit_single['simplified'][a:upper][str2nr(a:num, 10)]
+endfunction
+
+function! vimim#num_digit_2(num, upper, style)
+    if len(a:num) != 2          " only deal with two digits.
+        return
+    endif
+    if a:num[0] == '0'
+        return vimim#digit(a:num[1], a:upper)
+    elseif a:num[0] == '1' && and(a:style, 1) == 0
+        let result = ''
+    else
+        let result = vimim#digit(a:num[0], a:upper)
+    endif
+    let result .= g:vimim_digit_separator['simplified'][a:upper][0]
+    if a:num[1] != '0'
+        let result .= vimim#digit(a:num[1], a:upper)
+    endif
+    return result
+endfunction
+
+function! vimim#num_digit_3(num, upper, style)
+    if len(a:num) != 3          " only deal with three digits.
+        return
+    endif
+    if a:num[0] == '0'
+        return vimim#num_digit_2(a:num[1:2], a:upper, a:style)
+    else
+        let result = vimim#digit(a:num[0], a:upper)
+    endif
+    let result .= g:vimim_digit_separator['simplified'][a:upper][1]
+    if a:num[1] == '0'
+        if a:num[2] != '0'
+            let result .= vimim#digit('0', a:upper)
+            let result .= vimim#digit(a:num[2], a:upper)
+        endif
+    else
+        let result .= vimim#num_digit_2(a:num[1:2], a:upper, 1)
+    endif
+    return result
+endfunction
+
+function! vimim#num_digit_4(num, upper, style)
+    if len(a:num) != 4          " only deal with four digits.
+        return
+    endif
+    if a:num[0] == '0'
+        return vimim#num_digit_3(a:num[1:3], a:upper, a:style)
+    elseif a:num[0] == '2' && and(a:style, 2) != 0 && a:upper == 0
+        let result = g:vimim_digit_single['simplified'][0][10]
+    else
+        let result = vimim#digit(a:num[0], a:upper)
+    endif
+    let result .= g:vimim_digit_separator['simplified'][a:upper][2]
+    if a:num[1] == '0'
+        if str2nr(a:num[2:3]) != 0
+            let result .= vimim#digit('0', a:upper)
+            let result .= vimim#num_digit_2(a:num[2:3], a:upper, 1)
+        endif
+    else
+        let result .= vimim#num_digit_3(a:num[1:3], a:upper, a:style)
+    endif
+    return result
+endfunction
+
 " convert a 'integer' string to Chinese number,
 " e.g., 5704310 => 五百七十万四千三百一十
-function vimim#n2CNumber( num )
+function! vimim#n2CNumber( num, upper )
     " validate argument
     if !(a:num =~ '^\d\+$')
         return
     endif
     let result = ''
     let length = len(a:num)
-    let digitListL = split(g:vimim_digit_single.simplified[0], '\zs')
+    if a:num[0] == '0'
+    endif
     for i in range(length, 1, -1)
-        let group = (i-1)/4
-        let position = (i-1)%4
+        if a:num[length-i] == '0'
+            let lastiszero = 1
+            continue
+        else
+            if lastiszero == 1 && (TODO)
+                let result .= vimim#digit('0', a:upper)
+            endif
+            let group = (i-1)/4
+            let position = (i-1)%4
+            if a:num[length-i] =~ '[3-9]'
+            endif
+            let lastiszero = 0
+        endif
     endfor
     return
 endfunction
 
 " covert a 'integer' string to Chinese digit,
 " e.g., 5704310 => 五七〇四三一〇
-function vimim#n2CDigits( num )
+function! vimim#n2CDigits( num )
     " validate argument
     if !(a:num =~ '^\d\+$')
         return
     endif
     let result = ['', '']
-    let digitListL = split(g:vimim_digit_single.simplified[0], '\zs')
-    let digitListU = split(g:vimim_digit_single.simplified[1], '\zs')
     for i in split(a:num, '\zs')
-        let result[0] .= digitListL[char2nr(i)-char2nr(0)]
-        let result[1] .= digitListU[char2nr(i)-char2nr(0)]
+        let result[0] .= vimim#digit(i, 0)
+        let result[1] .= vimim#digit(i, 0)
     endfor
     return result
 endfunction
