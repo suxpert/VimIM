@@ -5,7 +5,7 @@
 "               Omni completion introduced from version 7.
 "               Copyright (C) 2013-2014 LiTuX, all wrongs reserved.
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-02-19 14:53:25
+" Last Change:  2014-02-19 17:51:49
 " Version:      0.0.0
 "
 " Install:      unpack all into your plugin folder, that's all.
@@ -54,15 +54,15 @@ let s:NumStyleExt = 4     " true: use extra characters; false: basic;
 
 scriptencoding utf8
 let g:vimim_digit_single = {
-\   'cn': [ split('〇一二三四五六七八九零 两', '\zs'),
+\   'cn': [ split('〇一二三四五六七八九零　两', '\zs'),
 \           split('零壹贰叁肆伍陆柒捌玖', '\zs')        ],
-\   'hk': [ split('〇一二三四五六七八九零 两', '\zs'),
+\   'hk': [ split('〇一二三四五六七八九零　两', '\zs'),
 \           split('零壹贰叁肆伍陆柒捌玖', '\zs')        ],
-\   'mo': [ split('〇一二三四五六七八九零 两', '\zs'),
+\   'mo': [ split('〇一二三四五六七八九零　两', '\zs'),
 \           split('零壹贰叁肆伍陆柒捌玖', '\zs')        ],
-\   'tw': [ split('〇一二三四五六七八九零', '\zs'),
-\           split('零壹貳叄肆伍陸柒捌玖', '\zs')        ],
-\   'sg': [ split('〇一二三四五六七八九零 两', '\zs'),
+\   'tw': [ split('〇一二三四五六七八九零　兩', '\zs'),
+\           split('零壹貳參肆伍陸柒捌玖　　叄', '\zs')        ],
+\   'sg': [ split('〇一二三四五六七八九零　两', '\zs'),
 \           split('零壹贰叁肆伍陆柒捌玖', '\zs')        ],
 \   'jp': [ split('〇一二三四五六七八九零', '\zs'),
 \           split('零壱弐参四五六七八九', '\zs')        ],
@@ -120,7 +120,7 @@ function! vimim#digit_single(num, style)
     endif
     let uselist = vimim#digit_list(g:vimim_digit_single, a:style)
 
-    if and(a:style, s:NumStyleExt) && exists('uselist[nr+10]') && uselist[nr+10] != ' '
+    if and(a:style, s:NumStyleExt) && exists('uselist[nr+10]') && uselist[nr+10] != '　'
         let result = uselist[nr+10]
     else
         let result = uselist[nr]
@@ -154,82 +154,23 @@ function! vimim#digit_group(grp, style)
     return result
 endfunction
 
-function! vimim#num_digit_2(num, upper, style)
-    if len(a:num) != 2          " only deal with two digits.
-        return
-    endif
-    if a:num[0] == '0'
-        return vimim#digit_single(a:num[1], a:upper)
-    elseif a:num[0] == '1' && and(a:style, 1) == 0
-        let result = ''
-    else
-        let result = vimim#digit_single(a:num[0], a:upper)
-    endif
-    let result .= vimim#digit_separator(2, a:upper)
-    if a:num[1] != '0'
-        let result .= vimim#digit_single(a:num[1], a:upper)
-    endif
-    return result
-endfunction
-
-function! vimim#num_digit_3(num, upper, style)
-    if len(a:num) != 3          " only deal with three digits.
-        return
-    endif
-    if a:num[0] == '0'
-        return vimim#num_digit_2(a:num[1:2], a:upper, a:style)
-    else
-        let result = vimim#digit_single(a:num[0], a:upper)
-    endif
-    let result .= vimim#digit_separator(3, a:upper)
-    if a:num[1] == '0'
-        if a:num[2] != '0'
-            let result .= vimim#digit_single('0', a:upper+s:NumStyleExt)
-            let result .= vimim#digit_single(a:num[2], a:upper)
-        endif
-    else
-        let result .= vimim#num_digit_2(a:num[1:2], a:upper, 1)
-    endif
-    return result
-endfunction
-
-function! vimim#num_digit_4(num, upper, style)
-    if len(a:num) != 4          " only deal with four digits.
-        return
-    endif
-    if a:num[0] == '0'
-        return vimim#num_digit_3(a:num[1:3], a:upper, a:style)
-    elseif a:num[0] == '2' && and(a:style, 2) != 0 && a:upper == 0
-        let result = vimim#digit_single(a:num[0], s:NumStyleExt)
-    else
-        let result = vimim#digit_single(a:num[0], a:upper)
-    endif
-    let result .= vimim#digit_separator(4, a:upper)
-    if a:num[1] == '0'
-        if str2nr(a:num[2:3]) != 0
-            let result .= vimim#digit_single('0', a:upper+s:NumStyleExt)
-            let result .= vimim#num_digit_2(a:num[2:3], a:upper, 1)
-        endif
-    else
-        let result .= vimim#num_digit_3(a:num[1:3], a:upper, a:style)
-    endif
-    return result
-endfunction
-
 " convert a 'integer' string to Chinese number,
 " e.g., 5704310 => 五百七十万四千三百一十
 " style can be combine of mask:
 " s:NumStyleBig (1),
 " s:NumStyleThd (2),
-let s:NumZeroBasic = 0x0400     " do NOT use the extend zero
-let s:NumZeroNone = 0x0200      " do NOT output zero
-let s:NumZeroTrim = 0x0100      " do NOT output zero before thousand
+let s:NumZeroBasic = 0x0800     " do NOT use the extend zero
+let s:NumZeroNone = 0x0400      " do NOT output zero
+let s:NumZeroTrim = 0x0200      " do NOT output zero before thousand
+let s:NumZeroFour = 0x0100      " do NOT apart zero segment (>4)
 let s:NumOneIgnoreGrp = 0x8000  " ignore 1 at 万/亿 et al.
 let s:NumOneIgnoreThs = 0x4000  " ignore 1 at thousand
 let s:NumOneIgnoreHnd = 0x2000  " ignore 1 at hundred
 let s:NumOneEnableTen = 0x1000  " enable 1 at ten (e.g., 一十四)
-let s:NumOneIgnoreAll = 0x0800  " ignore 1 at every group (or only start)
-let s:NumTwoBasic = 0x80        " do NOT use the extend two
+let s:NumOneIgnoreAll = 0x80    " ignore 1 at every group(or only start)
+let s:NumTwoBasic = 0x40        " do NOT use the extend two
+let s:NumTwoExtHnd = 0x20       " use the extend two at hundred
+let s:NumTwoExtStart = 0x10     " use the extend two only at start
 
 function! vimim#number( num, style )
     " validate argument
@@ -250,7 +191,7 @@ function! vimim#number( num, style )
         if a:num[idx] == '0'
             if start
                 if grp==0 && pos==1
-                    let digitstyle = xor(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                    let digitstyle = or(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
                     let result .= vimim#digit_single(0, digitstyle)
                 endif
                 continue
@@ -258,8 +199,8 @@ function! vimim#number( num, style )
             let zeros += 1
         else
             if !and(a:style, s:NumZeroNone)
-                if zeros>=4 || (zeros>0 && pos!=4) || (zeros>0 && !and(a:style, s:NumZeroTrim))
-                    let digitstyle = xor(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                if (zeros>=4 && !and(a:style, s:NumZeroFour)) || (zeros>0 && pos!=4) || (zeros>0 && !and(a:style, s:NumZeroTrim))
+                    let digitstyle = or(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
                     let result .= vimim#digit_single(0, digitstyle)
                 endif
             endif
@@ -278,7 +219,19 @@ function! vimim#number( num, style )
                     let result .= vimim#digit_single(a:num[idx], digitstyle)
                 endif
             elseif a:num[idx]=='2'
-                if !and(a:style, s:NumTwoBasic) && (pos==4 || (start && pos==1 && grp!=0))
+                let twoExt = 0
+                if !and(a:style, s:NumTwoBasic)
+                    if start && pos==1 && grp!=0        " 两万/两亿
+                        let twoExt = 1
+                    elseif start || !and(a:style, s:NumTwoExtStart)
+                        if pos==4                       " 两千
+                            let twoExt = 1
+                        elseif pos==3 && and(a:style, s:NumTwoExtHnd)   " 两百
+                            let twoExt = 1
+                        endif
+                    endif
+                endif
+                if twoExt == 1
                     let result .= vimim#digit_single(a:num[idx], or(digitstyle, s:NumStyleExt))
                 else
                     let result .= vimim#digit_single(a:num[idx], and(digitstyle, invert(s:NumStyleExt)))
@@ -412,7 +365,9 @@ function! vimim#fut_prepare()
     call vimim#ut_add_fun('vimim#number', ['0', 0], '零')
     call vimim#ut_add_fun('vimim#number', ['0', 1], '零')
     call vimim#ut_add_fun('vimim#number', ['0', s:NumZeroBasic], '〇')
-    call vimim#ut_add_fun('vimim#number', ['0', s:NumZeroBasic+1], '零')
+    call vimim#ut_add_fun('vimim#number', ['0', s:NumZeroBasic+s:NumStyleBig], '零')
+    call vimim#ut_add_fun('vimim#number', ['10', s:NumOneEnableTen], '一十')
+    call vimim#ut_add_fun('vimim#number', ['10', s:NumOneEnableTen+s:NumStyleBig], '壹拾')
     call vimim#ut_add_fun('vimim#number', ['10', 0], '十')
     call vimim#ut_add_fun('vimim#number', ['100', 0], '一百')
     call vimim#ut_add_fun('vimim#number', ['1000', 0], '一千')
@@ -466,6 +421,14 @@ function! vimim#fut_prepare()
     call vimim#ut_add_fun('vimim#number', ['2002', 0], '两千零二')
     call vimim#ut_add_fun('vimim#number', ['8504', 0], '八千五百零四')
     call vimim#ut_add_fun('vimim#number', ['22222', 0], '两万两千二百二十二')
+    call vimim#ut_add_fun('vimim#number', ['10002014', 0], '一千万零两千零一十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', 1], '壹仟万零贰仟零壹拾肆')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumZeroBasic], '一千万〇两千〇一十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumZeroBasic+s:NumTwoBasic], '一千万〇二千〇一十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumOneIgnoreAll], '一千万零两千零十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumZeroTrim], '一千万两千零一十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumZeroTrim+s:NumZeroBasic], '一千万两千〇一十四')
+    call vimim#ut_add_fun('vimim#number', ['10002014', s:NumZeroTrim+s:NumTwoBasic], '一千万二千零一十四')
 " test result: from excel
 " 一亿二千三百四十五	壹亿贰仟叁佰肆拾伍	一億二千三百四十五	壹億貳仟參佰肆拾伍
 " 一亿○三百四十五	壹亿零叁佰肆拾伍	一億○三百四十五	壹億零參佰肆拾伍
@@ -476,8 +439,17 @@ function! vimim#fut_prepare()
 " 一十万○三百四十五	壹拾万零叁佰肆拾伍	一十萬○三百四十五	壹拾萬零參佰肆拾伍
 " 一十万二千三百四十五	壹拾万贰仟叁佰肆拾伍	一十萬二千三百四十五	壹拾萬貳仟參佰肆拾伍
 " 一万○三百四十五	壹万零叁佰肆拾伍	一萬○三百四十五	壹萬零參佰肆拾伍
-    call vimim#ut_add_fun('vimim#number', ['100002345', 0], '一亿零两千三百四十五')
+    call vimim#ut_add_fun('vimim#number', ['100002010', 0], '一亿零两千零一十')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroFour], '一亿零两千零一十')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroFour+s:NumTwoBasic], '一亿零二千零一十')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroFour+s:NumZeroTrim+s:NumTwoBasic], '一亿二千零一十')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroFour+s:NumZeroTrim+s:NumTwoBasic+s:NumStyleBig], '壹亿贰仟零壹拾')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroFour+s:NumZeroTrim], '一亿两千零一十')
+    call vimim#ut_add_fun('vimim#number', ['100002010', s:NumZeroBasic], '一亿〇两千〇一十')
     call vimim#ut_add_fun('vimim#number', ['100000345', 0], '一亿零三百四十五')
+    call vimim#ut_add_fun('vimim#number', ['100000345', s:NumZeroBasic], '一亿〇三百四十五')
+    call vimim#ut_add_fun('vimim#number', ['5920001245', 0], '五十九亿两千万零一千二百四十五')
+    call vimim#ut_add_fun('vimim#number', ['5920001245', s:NumTwoExtHnd], '五十九亿两千万零一千两百四十五')
 endfunction
 
 function! vimim#funit_test()
