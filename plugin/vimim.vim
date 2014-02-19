@@ -5,7 +5,7 @@
 "               Omni completion introduced from version 7.
 "               Copyright (C) 2013-2014 LiTuX, all wrongs reserved.
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-02-18 23:10:42
+" Last Change:  2014-02-19 14:53:25
 " Version:      0.0.0
 "
 " Install:      unpack all into your plugin folder, that's all.
@@ -218,12 +218,26 @@ endfunction
 
 " convert a 'integer' string to Chinese number,
 " e.g., 5704310 => 五百七十万四千三百一十
-function! vimim#n2CNumber( num, style )
+" style can be combine of mask:
+" s:NumStyleBig (1),
+" s:NumStyleThd (2),
+let s:NumZeroBasic = 0x0400     " do NOT use the extend zero
+let s:NumZeroNone = 0x0200      " do NOT output zero
+let s:NumZeroTrim = 0x0100      " do NOT output zero before thousand
+let s:NumOneIgnoreGrp = 0x8000  " ignore 1 at 万/亿 et al.
+let s:NumOneIgnoreThs = 0x4000  " ignore 1 at thousand
+let s:NumOneIgnoreHnd = 0x2000  " ignore 1 at hundred
+let s:NumOneEnableTen = 0x1000  " enable 1 at ten (e.g., 一十四)
+let s:NumOneIgnoreAll = 0x0800  " ignore 1 at every group (or only start)
+let s:NumTwoBasic = 0x80        " do NOT use the extend two
+
+function! vimim#number( num, style )
     " validate argument
     if !(a:num =~ '^\d\+$')
         return
     endif
 
+    let digitstyle = and(a:style, 3)    " the lower part
     let result = ''
 
     let start = 1
@@ -231,40 +245,59 @@ function! vimim#n2CNumber( num, style )
     let len = strlen(a:num)
 
     for idx in range(len)
-        let pos = (len-idx)%4
+        let pos = (len-idx+3)%4+1       " 1, 2, 3, 4 for 个十百千
         let grp = (len-idx)/4
         if a:num[idx] == '0'
             if start
                 if grp==0 && pos==1
-                    let result .= '零'
+                    let digitstyle = xor(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                    let result .= vimim#digit_single(0, digitstyle)
                 endif
                 continue
             endif
             let zeros += 1
         else
-            if zeros>=4 || (zeros>0 && pos!=0)
-                let result .= '零'
+            if !and(a:style, s:NumZeroNone)
+                if zeros>=4 || (zeros>0 && pos!=4) || (zeros>0 && !and(a:style, s:NumZeroTrim))
+                    let digitstyle = xor(digitstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                    let result .= vimim#digit_single(0, digitstyle)
+                endif
             endif
             let zeros = 0           " reset zero counter
-            if start && pos==2 && a:num[idx]=='1'
-                " do nothing, this 1 do not need to converted
-            elseif a:num[idx]=='2' && (pos==0 || (start && pos==1 && grp!=0))
-                let result .= '两'
+            if a:num[idx]=='1' && (and(a:style, s:NumOneIgnoreAll) || start)
+                if pos==2 && !and(a:style, s:NumOneEnableTen)
+                    " 十二 instead of 一十二
+                elseif pos==3 && and(a:style, s:NumOneIgnoreHnd)
+                    " 百六十 instead of 一百六十, TODO: if 100
+                elseif pos==4 && and(a:style, s:NumOneIgnoreThs)
+                    " 千八百 instead of 一千八百, TODO: if 1000
+                elseif pos==1 && grp!=0 && and(a:style, s:NumOneIgnoreGrp)
+                    " 万五千 insread of 一万五千, TODO: if 10000
+                else
+                    " This 1 should be converted.
+                    let result .= vimim#digit_single(a:num[idx], digitstyle)
+                endif
+            elseif a:num[idx]=='2'
+                if !and(a:style, s:NumTwoBasic) && (pos==4 || (start && pos==1 && grp!=0))
+                    let result .= vimim#digit_single(a:num[idx], or(digitstyle, s:NumStyleExt))
+                else
+                    let result .= vimim#digit_single(a:num[idx], and(digitstyle, invert(s:NumStyleExt)))
+                endif
             else
-                let result .= a:num[idx]
+                let result .= vimim#digit_single(a:num[idx], digitstyle)
             endif
             let start = 0
         endif
 
         if a:num[idx]!='0' && pos!=1
-            let result .= 'bsq'
+            let result .= vimim#digit_separator(pos, digitstyle)
         elseif pos==1 && grp!=0
             if zeros>=4
                 if grp%2==0
-                    let result .= '亿'
+                    let result .= vimim#digit_group((grp+1)%2+1, digitstyle)
                 endif
             else
-                let result .= 'wy'
+                let result .= vimim#digit_group((grp+1)%2+1, digitstyle)
             endif
         endif
     endfor
@@ -274,29 +307,22 @@ endfunction
 
 " covert a 'integer' string to Chinese digit,
 " e.g., 5704310 => 五七〇四三一〇
-function! vimim#n2CDigits( num )
+function! vimim#digits( num, style )
     " validate argument
     if !(a:num =~ '^\d\+$')
         return
     endif
-    let result = ['', '']
+    let result = ''
     for i in split(a:num, '\zs')
-        let result[0] .= vimim#digit(i, 0)
-        let result[1] .= vimim#digit(i, 0)
+        if i == '2' && a:style == s:NumStyleExt
+            let result .= vimim#digit_single(i, xor(a:style, s:NumStyleExt))
+        else
+            let result .= vimim#digit_single(i, a:style)
+        endif
     endfor
     return result
 endfunction
 
-" test result: from excel
-" 一亿二千三百四十五	壹亿贰仟叁佰肆拾伍	一億二千三百四十五	壹億貳仟參佰肆拾伍
-" 一亿○三百四十五	壹亿零叁佰肆拾伍	一億○三百四十五	壹億零參佰肆拾伍
-" 一千万○二百三十四	壹仟万零贰佰叁拾肆	一千萬○二百三十四	壹仟萬零貳佰參拾肆
-" 一千万二千三百四十五	壹仟万贰仟叁佰肆拾伍	一千萬二千三百四十五	壹仟萬貳仟參佰肆拾伍
-" 一百万○二百三十四	壹佰万零贰佰叁拾肆	一百萬○二百三十四	壹佰萬零貳佰參拾肆
-" 一百万一千二百三十四	壹佰万壹仟贰佰叁拾肆	一百萬一千二百三十四	壹佰萬壹仟貳佰參拾肆
-" 一十万○三百四十五	壹拾万零叁佰肆拾伍	一十萬○三百四十五	壹拾萬零參佰肆拾伍
-" 一十万二千三百四十五	壹拾万贰仟叁佰肆拾伍	一十萬二千三百四十五	壹拾萬貳仟參佰肆拾伍
-" 一万○三百四十五	壹万零叁佰肆拾伍	一萬○三百四十五	壹萬零參佰肆拾伍
 
 
 " This VimIM use a Register-Enable management for IMEs and Addons,
@@ -380,22 +406,78 @@ function! vimim#fut_prepare()
     call vimim#ut_add_fun('vimim#digit_group', [2, 0], '亿')
     call vimim#ut_add_fun('vimim#digit_group', [1, 1], '万')
     call vimim#ut_add_fun('vimim#digit_group', [2, 1], '亿')
-    call vimim#ut_add_fun('vimim#num_digit_2', ['10', 0, 0], '十')
-    call vimim#ut_add_fun('vimim#num_digit_2', ['12', 0, 0], '十二')
-    call vimim#ut_add_fun('vimim#num_digit_2', ['20', 0, 0], '二十')
-    call vimim#ut_add_fun('vimim#num_digit_2', ['28', 0, 0], '二十八')
-    call vimim#ut_add_fun('vimim#num_digit_3', ['100', 0, 0], '一百')
-    call vimim#ut_add_fun('vimim#num_digit_3', ['109', 0, 0], '一百零九')
-    call vimim#ut_add_fun('vimim#num_digit_3', ['140', 0, 0], '一百四十')
-    call vimim#ut_add_fun('vimim#num_digit_3', ['270', 0, 0], '二百七十')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['1000', 0, 0], '一千')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['1006', 0, 0], '一千零六')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['1020', 0, 0], '一千零二十')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['2014', 0, 0], '二千零一十四')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['2100', 0, 0], '二千一百')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['2014', 0, 2], '两千零一十四')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['2100', 0, 2], '两千一百')
-    call vimim#ut_add_fun('vimim#num_digit_4', ['8504', 0, 0], '八千五百零四')
+    call vimim#ut_add_fun('vimim#digits', ['1002033', 0], '一〇〇二〇三三')
+    call vimim#ut_add_fun('vimim#digits', ['1002033', 1], '壹零零贰零叁叁')
+    call vimim#ut_add_fun('vimim#digits', ['1002033', 4], '一零零二零三三')
+    call vimim#ut_add_fun('vimim#number', ['0', 0], '零')
+    call vimim#ut_add_fun('vimim#number', ['0', 1], '零')
+    call vimim#ut_add_fun('vimim#number', ['0', s:NumZeroBasic], '〇')
+    call vimim#ut_add_fun('vimim#number', ['0', s:NumZeroBasic+1], '零')
+    call vimim#ut_add_fun('vimim#number', ['10', 0], '十')
+    call vimim#ut_add_fun('vimim#number', ['100', 0], '一百')
+    call vimim#ut_add_fun('vimim#number', ['1000', 0], '一千')
+    call vimim#ut_add_fun('vimim#number', ['10000', 0], '一万')
+    call vimim#ut_add_fun('vimim#number', ['100000', 0], '十万')
+    call vimim#ut_add_fun('vimim#number', ['1000000', 0], '一百万')
+    call vimim#ut_add_fun('vimim#number', ['10000000', 0], '一千万')
+    call vimim#ut_add_fun('vimim#number', ['100000000', 0], '一亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000', 0], '十亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000', 0], '一百亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000', 0], '一千亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000', 0], '一万亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000', 0], '十万亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000', 0], '一百万亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000000', 0], '一千万亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000000', 0], '一亿亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000000', 0], '十亿亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000000000', 0], '一百亿亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000000000', 0], '一千亿亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000000000', 0], '一万亿亿')
+    call vimim#ut_add_fun('vimim#number', ['10', 1], '拾')
+    call vimim#ut_add_fun('vimim#number', ['100', 1], '壹佰')
+    call vimim#ut_add_fun('vimim#number', ['1000', 1], '壹仟')
+    call vimim#ut_add_fun('vimim#number', ['10000', 1], '壹万')
+    call vimim#ut_add_fun('vimim#number', ['100000', 1], '拾万')
+    call vimim#ut_add_fun('vimim#number', ['1000000', 1], '壹佰万')
+    call vimim#ut_add_fun('vimim#number', ['10000000', 1], '壹仟万')
+    call vimim#ut_add_fun('vimim#number', ['100000000', 1], '壹亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000', 1], '拾亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000', 1], '壹佰亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000', 1], '壹仟亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000', 1], '壹万亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000', 1], '拾万亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000', 1], '壹佰万亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000000', 1], '壹仟万亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000000', 1], '壹亿亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000000', 1], '拾亿亿')
+    call vimim#ut_add_fun('vimim#number', ['1000000000000000000', 1], '壹佰亿亿')
+    call vimim#ut_add_fun('vimim#number', ['10000000000000000000', 1], '壹仟亿亿')
+    call vimim#ut_add_fun('vimim#number', ['100000000000000000000', 1], '壹万亿亿')
+    call vimim#ut_add_fun('vimim#number', ['12', 0], '十二')
+    call vimim#ut_add_fun('vimim#number', ['20', 0], '二十')
+    call vimim#ut_add_fun('vimim#number', ['28', 0], '二十八')
+    call vimim#ut_add_fun('vimim#number', ['109', 0], '一百零九')
+    call vimim#ut_add_fun('vimim#number', ['140', 0], '一百四十')
+    call vimim#ut_add_fun('vimim#number', ['270', 0], '二百七十')
+    call vimim#ut_add_fun('vimim#number', ['1006', 0], '一千零六')
+    call vimim#ut_add_fun('vimim#number', ['1020', 0], '一千零二十')
+    call vimim#ut_add_fun('vimim#number', ['2014', 0], '两千零一十四')
+    call vimim#ut_add_fun('vimim#number', ['2100', 0], '两千一百')
+    call vimim#ut_add_fun('vimim#number', ['2002', 0], '两千零二')
+    call vimim#ut_add_fun('vimim#number', ['8504', 0], '八千五百零四')
+    call vimim#ut_add_fun('vimim#number', ['22222', 0], '两万两千二百二十二')
+" test result: from excel
+" 一亿二千三百四十五	壹亿贰仟叁佰肆拾伍	一億二千三百四十五	壹億貳仟參佰肆拾伍
+" 一亿○三百四十五	壹亿零叁佰肆拾伍	一億○三百四十五	壹億零參佰肆拾伍
+" 一千万○二百三十四	壹仟万零贰佰叁拾肆	一千萬○二百三十四	壹仟萬零貳佰參拾肆
+" 一千万二千三百四十五	壹仟万贰仟叁佰肆拾伍	一千萬二千三百四十五	壹仟萬貳仟參佰肆拾伍
+" 一百万○二百三十四	壹佰万零贰佰叁拾肆	一百萬○二百三十四	壹佰萬零貳佰參拾肆
+" 一百万一千二百三十四	壹佰万壹仟贰佰叁拾肆	一百萬一千二百三十四	壹佰萬壹仟貳佰參拾肆
+" 一十万○三百四十五	壹拾万零叁佰肆拾伍	一十萬○三百四十五	壹拾萬零參佰肆拾伍
+" 一十万二千三百四十五	壹拾万贰仟叁佰肆拾伍	一十萬二千三百四十五	壹拾萬貳仟參佰肆拾伍
+" 一万○三百四十五	壹万零叁佰肆拾伍	一萬○三百四十五	壹萬零參佰肆拾伍
+    call vimim#ut_add_fun('vimim#number', ['100002345', 0], '一亿零两千三百四十五')
+    call vimim#ut_add_fun('vimim#number', ['100000345', 0], '一亿零三百四十五')
 endfunction
 
 function! vimim#funit_test()
@@ -409,9 +491,9 @@ function! vimim#funit_test()
         if !(report =~'Success')
             let failed += 1
         endif
-        let g:vimim_futreport = add(g:vimim_futreport, g:vimim_futlist[i][0].'('.join(g:vimim_futlist[i][1], ',').'): '.report)
+        let g:vimim_futreport = add(g:vimim_futreport, report.":\t".g:vimim_futlist[i][0].'('.join(g:vimim_futlist[i][1], ', ').')' )
     endfor
-    return string(failed).' failed out of '.string(tlen).string(g:vimim_futreport)
+    return string(failed).' test failed out of '.string(tlen).".\n".join(g:vimim_futreport, "\n")
 endfunction
 
 
