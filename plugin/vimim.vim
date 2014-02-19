@@ -5,7 +5,7 @@
 "               Omni completion introduced from version 7.
 "               Copyright (C) 2013-2014 LiTuX, all wrongs reserved.
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-02-19 17:51:49
+" Last Change:  2014-02-19 23:58:12
 " Version:      0.0.0
 "
 " Install:      unpack all into your plugin folder, that's all.
@@ -159,8 +159,8 @@ endfunction
 " style can be combine of mask:
 " s:NumStyleBig (1),
 " s:NumStyleThd (2),
-let s:NumZeroBasic = 0x0800     " do NOT use the extend zero
-let s:NumZeroNone = 0x0400      " do NOT output zero
+let s:NumZeroNone = 0x0800      " do NOT output zero
+let s:NumZeroBasic = 0x0400     " do NOT use the extend zero
 let s:NumZeroTrim = 0x0200      " do NOT output zero before thousand
 let s:NumZeroFour = 0x0100      " do NOT apart zero segment (>4)
 let s:NumOneIgnoreGrp = 0x8000  " ignore 1 at 万/亿 et al.
@@ -325,7 +325,7 @@ function! vimim#assert(funame, arglist, fres)
             let report = 'Unsupported'
         endif
     catch
-        let report = 'Exception'
+        let report = 'Exception: '.v:exception
     finally
         if report == ''
             if result == a:fres
@@ -337,6 +337,42 @@ function! vimim#assert(funame, arglist, fres)
     endtry
     return report
 endfunction
+
+function! vimim#list_number(num)
+    let starttime = reltime()
+    let styleAboutOne = [   0x1000,
+                \           0x0000, 0x3000, 0x5000, 0x9000,
+                \           0x2000, 0x4000, 0x8000, 0x7000, 0xB000, 0xD000,
+                \           0x6000, 0xA000, 0xC000, 0xF000,
+                \           0xE000,
+                \           0x1080,
+                \           0x0080, 0x3080, 0x5080, 0x9080,
+                \           0x2080, 0x4080, 0x7080,
+                \           0x6080, ]
+    let styleAboutZero = [  0x000, 0x100, 0x200, 0x300,
+                \           0x400, 0x500, 0x600, 0x700, 0x800, ]
+    let styleAboutTwo = [   0x00, 0x10, 0x20, 0x30, 0x40, ]
+    let result = {}
+    for styleA in range(0, 0x3, 0x1)
+        for styleB in styleAboutTwo
+            for styleC in styleAboutZero
+                for styleD in styleAboutOne
+                    let style = styleA+styleB+styleC+styleD
+                    " let result = add(result, vimim#number(a:num, style).'('.style.')')
+                    let cnum = vimim#number(a:num, style)
+                    if !has_key(result, cnum)
+                        let result[cnum] = [printf("%#06x", style)]
+                    else
+                        " let result[cnum] = printf("%#06x", and(str2nr(result[cnum], 16), style))
+                        let result[cnum] = add(result[cnum], printf("%#06x", style))
+                    endif
+                endfor
+            endfor
+        endfor
+    endfor
+    let result[a:num] = reltimestr(reltime(starttime))
+    return result
+endf
 
 function! vimim#fut_prepare()
     let g:vimim_futlist = []
