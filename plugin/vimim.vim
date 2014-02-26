@@ -5,7 +5,7 @@
 "               Omni completion introduced from version 7.
 "               Copyright (C) 2013-2014 LiTuX, all wrongs reserved.
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-02-20 22:33:20
+" Last Change:  2014-02-21 20:34:25
 " Version:      0.0.0
 "
 " Install:      unpack all into your plugin folder, that's all.
@@ -67,7 +67,8 @@ let s:NumTwoExtHnd = 0x20       " use the extend two at hundred
 let s:NumTwoExtStart = 0x10     " use the extend two only at start
 
 " Convert styles for different languages, TODO
-" Mainland Chinese, small/big: 0x00/0x01
+let g:vimim_digit_styles = {}
+" Mainland China, small/big: 0x00/0x01
 " 0: 零/〇(small only)：0x0000/0x0400
 "    十万零一千/十万一千，三亿零五千/十万一千，三亿五千
 "    0x0000/0x0200/0x0300
@@ -75,21 +76,10 @@ let s:NumTwoExtStart = 0x10     " use the extend two only at start
 "    0x1000/0x0080/0x0000
 " 2: 二/两/两 (only at start): small only
 "    0x0040/0x0000/0x0010
-" let g:vimim_digit_styles['cn'] = [
-" \   [[0x0000, 0x1000, 0x0040, 0x1040, ], []],
-" \   [[0x0001, 0x1001], []],
-" \ ]
-" The following list *MAY* have all 'valid' styles
-"   0x0000, 0x0010, 0x0040,  0x0400, 0x0410, 0x0440,    0x0001,
-"   0x0080, 0x0090, 0x00C0,  0x0480, 0x0490, 0x04C0,    0x0081,
-"   0x1000, 0x1010, 0x1040,  0x1400, 0x1410, 0x1440,    0x1001,
-"   0x0200, 0x0210, 0x0240,  0x0600, 0x0610, 0x0640,    0x0201,
-"   0x0280, 0x0290, 0x02C0,  0x0680, 0x0690, 0x06C0,    0x0281,
-"   0x1200, 0x1210, 0x1240,  0x1600, 0x1610, 0x1640,    0x1201,
-"   0x0300, 0x0310, 0x0340,  0x0700, 0x0710, 0x0740,    0x0301,
-"   0x0380, 0x0390, 0x03C0,  0x0780, 0x0790, 0x07C0,    0x0381,
-"   0x1300, 0x1310, 0x1340,  0x1700, 0x1710, 0x1740,    0x1301,
 let g:vimim_digit_styles['cn'] = [
+\   [0x0000, 0x1000, 0x0040, 0x1040, 0x1001, 0x1201, 0x1301,],
+\   [0x0200, 0x1200, 0x0240, 0x1240, 0x0001, 0x0201, 0x0301,],
+\   [
 \   0x0000, 0x0010, 0x0040,  0x0400, 0x0410, 0x0440,    0x0001,
 \   0x0080, 0x0090, 0x00C0,  0x0480, 0x0490, 0x04C0,    0x0081,
 \   0x1000, 0x1010, 0x1040,  0x1400, 0x1410, 0x1440,    0x1001,
@@ -99,12 +89,40 @@ let g:vimim_digit_styles['cn'] = [
 \   0x0300, 0x0310, 0x0340,  0x0700, 0x0710, 0x0740,    0x0301,
 \   0x0380, 0x0390, 0x03C0,  0x0780, 0x0790, 0x07C0,    0x0381,
 \   0x1300, 0x1310, 0x1340,  0x1700, 0x1710, 0x1740,    0x1301,
-\ ]
-
+\   ], ]
+" Taiwan, TODO, small/big: 0x00/0x01
+" 0: 零/〇(small only)：0x0000/0x0400
+"    十万零一千/十万一千，三亿零五千/十万一千，三亿五千
+"    0x0000/0x0200/0x0300
+" 1: 一十/十/十 (only at start): small only
+"    0x1000/0x0080/0x0000
+" 2: 二/兩千/兩百/兩 (only at start): small only
+"    0x0040/0x0000/0x0010
 let g:vimim_digit_styles['tw'] = [
-\           0x1000, 0x1010, 0x1020, 0x1030, 0x1040,
-\           0x01,
-\ ]
+\   [0x0000, 0x1000, 0x0040, 0x1040, 0x1001, 0x1201, 0x1301,],
+\   [0x0200, 0x1200, 0x0240, 0x1240, 0x0001, 0x0201, 0x0301,],
+\   [
+\   0x0000, 0x0010, 0x0040,  0x0400, 0x0410, 0x0440,    0x0001,
+\   0x0080, 0x0090, 0x00C0,  0x0480, 0x0490, 0x04C0,    0x0081,
+\   0x1000, 0x1010, 0x1040,  0x1400, 0x1410, 0x1440,    0x1001,
+\   0x0200, 0x0210, 0x0240,  0x0600, 0x0610, 0x0640,    0x0201,
+\   0x0280, 0x0290, 0x02C0,  0x0680, 0x0690, 0x06C0,    0x0281,
+\   0x1200, 0x1210, 0x1240,  0x1600, 0x1610, 0x1640,    0x1201,
+\   0x0300, 0x0310, 0x0340,  0x0700, 0x0710, 0x0740,    0x0301,
+\   0x0380, 0x0390, 0x03C0,  0x0780, 0x0790, 0x07C0,    0x0381,
+\   0x1300, 0x1310, 0x1340,  0x1700, 0x1710, 0x1740,    0x1301,
+\   ], ]
+
+" Japan, TODO, small/big: 0x00/0x01
+" 0: 零/〇(small only)：0x0000/0x0400   0x0800
+" 1: 一十/十/十 (only at start): small only
+"    0x1000/0x0080/0x0000
+"    0x2000/0x3000
+let g:vimim_digit_styles['jp'] = [
+\   [],
+\   [],
+\   [
+\   ], ]
 
 scriptencoding utf8
 let g:vimim_digit_single = {
@@ -325,8 +343,8 @@ endfunction
 " This VimIM use a Register-Enable management for IMEs and Addons,
 " where IME means to transform a string matched by a RegExp,
 " while for an Addon, the string should starting with a 'Leader'.
-" For example, IME 'GooglePYOL' could take strings [a-hj-tw-z][a-z']*,
-" and an Addon 'ChineseNum' takes [1-9][0-9]* starting with an 'i'.
+" For example, IME 'GooglePYOL' could take strings '[a-hj-tw-z][a-z']*',
+" and an Addon 'ChineseNum' takes '[0-9]\+' starting with an 'i'.
 
 " string with 'RegExp' type will be transformed by the function 'Func',
 " aliased as 'IME', if is enabled.
@@ -384,19 +402,25 @@ endfunction
 
 function! vimim#number_list(num, behave)
     " 0: common results;    1: extra;       2: all
-    let result = {}
-    for style in g:vimim_digit_styles[g:vimim_lang]
+    let starttime = reltime()
+    let result = []
+    let dict = {}
+    for style in g:vimim_digit_styles[g:vimim_lang][a:behave]
         let cnum = vimim#number(a:num, style)
-        if !has_key(result, cnum)
-            let result[cnum] = [printf("%#06x", style)]
+        if !has_key(dict, cnum)
+            let dict[cnum] = [printf("%#06x", style)]
+            let result = add(result, cnum)
         else
-            let result[cnum] = add(result[cnum], printf("%#06x", style))
+            let dict[cnum] = add(dict[cnum], printf("%#06x", style))
         endif
     endfor
-    return result
+    let dict[a:num] = reltimestr(reltime(starttime))
+    let dict['result'] = result
+    return dict
 endf
 
-function! vimim#test_number(num)
+function! vimim#number_style_test(num)
+    " TODO: this function is too slow!
     let starttime = reltime()
     let styleAboutOne = [   0x1000,
                 \           0x0000, 0x3000, 0x5000, 0x9000,
