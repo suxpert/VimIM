@@ -1,0 +1,11 @@
+# Tags file
+tags
+.tags
+TAGS
+
+# Backup et.al. by editor
+*.swp
+*.bak
+*.un~
+*~
+
