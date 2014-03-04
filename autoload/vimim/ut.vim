@@ -58,6 +58,41 @@ function! vimim#ut#assert(funame, arglist, fres)
     return report
 endfunction
 
+
+function! vimim#ut#assert(funame, arglist, fres)
+    let arglen = len(a:arglist)
+    let Fref = function(a:funame)
+    let report = ''
+    try
+        if arglen == 0
+            let result = Fref()
+        elseif arglen == 1
+            let result = Fref(a:arglist[0])
+        elseif arglen == 2
+            let result = Fref(a:arglist[0], a:arglist[1])
+        elseif arglen == 3
+            let result = Fref(a:arglist[0], a:arglist[1], a:arglist[2])
+        elseif arglen == 4
+            let result = Fref(a:arglist[0], a:arglist[1], a:arglist[2], a:arglist[3])
+        elseif arglen == 5
+            let result = Fref(a:arglist[0], a:arglist[1], a:arglist[2], a:arglist[3], a:arglist[4])
+        else
+            let report = 'Unsupported'
+        endif
+    catch
+        let report = 'Exception: '.v:exception
+    finally
+        if report == ''
+            if result == a:fres
+                let report = 'Success('.result.')'
+            else
+                let report = 'Failed('.result.'[ne]'.a:fres.')'
+            endif
+        endif
+    endtry
+    return report
+endfunction
+
 function! vimim#ut#prepare()
     let g:vimim_futlist = []
     call vimim#ut#add_fun('vimim#digits#single', [0, 0], '〇')
