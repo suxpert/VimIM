@@ -1,7 +1,7 @@
 "===========================================================================
 " Description:  Digit process for VimIM
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-03-04 15:42:38
+" Last Change:  2014-03-05 00:44:05
 " Version:      0.0.0
 "
 " Changes:
@@ -21,7 +21,7 @@ let s:NumStyleExt = 4     " true: use extra characters; false: basic;
 
 " Convert Style Mask
 let s:NumZeroNone = 0x0800      " do NOT output zero
-let s:NumZeroBasic = 0x0400     " do NOT use the extend zero
+let s:NumZeroOrig = 0x0400      " do NOT use the extend zero
 let s:NumZeroTrim = 0x0200      " do NOT output zero before thousand
 let s:NumZeroFour = 0x0100      " do NOT apart zero segment (>4)
 let s:NumOneIgnoreGrp = 0x8000  " ignore 1 at 万/亿 et al.
@@ -218,7 +218,7 @@ function! vimim#digits#number( num, style )
         if a:num[idx] == '0'
             if start
                 if grp==0 && pos==1
-                    let digitstyle = or(basicstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                    let digitstyle = or(basicstyle, (and(a:style, s:NumZeroOrig)? 0: s:NumStyleExt))
                     let result .= vimim#digits#single(0, digitstyle)
                 endif
                 continue
@@ -227,7 +227,7 @@ function! vimim#digits#number( num, style )
         else
             if !and(a:style, s:NumZeroNone)
                 if (zeros>=4 && !and(a:style, s:NumZeroFour)) || (zeros>0 && pos!=4) || (zeros>0 && !and(a:style, s:NumZeroTrim))
-                    let digitstyle = or(basicstyle, (and(a:style, s:NumZeroBasic)? 0: s:NumStyleExt))
+                    let digitstyle = or(basicstyle, (and(a:style, s:NumZeroOrig)? 0: s:NumStyleExt))
                     let result .= vimim#digits#single(0, digitstyle)
                 endif
             endif
