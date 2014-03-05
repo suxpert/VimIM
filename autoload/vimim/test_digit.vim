@@ -51,8 +51,11 @@ let s:list += [['vimim#digits#group', [2, s:NumStyleBig], '亿']]
 echo vimim#ut#unit_test(s:list)
 
 let s:list = []
-let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleDft], 'vimim#digits#digit', ['1002033', s:NumStyleThd]]]
-let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleBig], 'vimim#digits#digit', ['1002033', s:NumStyleBig+s:NumStyleThd]]]
+let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleDft],
+            \   'vimim#digits#digit', ['1002033', s:NumStyleThd]    ]]
+let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleThd],
+            \   'vimim#digits#digit', ['1002033', s:NumStyleBig+s:NumStyleThd]  ]]
+
 let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleDft], '一〇〇二〇三三']]
 let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleBig], '壹零零贰零叁叁']]
 let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleExt], '一零零二零三三']]
