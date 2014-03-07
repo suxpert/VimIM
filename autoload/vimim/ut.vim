@@ -1,4 +1,7 @@
-" unit test module for vimim functions
+"==================================================================
+" unit test module for vimim functions, this file is part of VimIM
+" Copyright (C) 2014 LiTuX, all wrongs reserved.
+"==================================================================
 
 let g:vimim#ut#last_reports = []
 
@@ -13,13 +16,18 @@ function! vimim#ut#assert(funame, arglist, fres)
     if report == ''
         if result == a:fres
             let report = 'Success: '.a:funame
-            let report .= substitute(string(a:arglist), '^\[\(.*\)]$', '(\1)', '')
-            let report .= ' == '.substitute(string(result), '\n', '\\n', 'g')
+            let report .= substitute(string(a:arglist),
+                        \ '^\[\(.*\)]$', '(\1)', '')
+            let report .= ' == '
+                        \.substitute(string(result), '\n', '\\n', 'g')
         else
             let report = 'Failed: '.a:funame
-            let report .= substitute(string(a:arglist), '^\[\(.*\)]$', '(\1)', '')
-            let report .= ' == '.substitute(string(result), '\n', '\\n', 'g')
-            let report .= ' != '.substitute(string(a:fres), '\n', '\\n', 'g')
+            let report .= substitute(string(a:arglist),
+                        \ '^\[\(.*\)]$', '(\1)', '')
+            let report .= ' == '
+                        \.substitute(string(result), '\n', '\\n', 'g')
+            let report .= ' != '
+                        \.substitute(string(a:fres), '\n', '\\n', 'g')
         endif
     endif
     return report
@@ -36,17 +44,24 @@ function! vimim#ut#assert_functions(funame1, arglist1, funame2, arglist2)
     if report == ''
         if result1 == result2
             let report = 'Success: '.a:funame1
-            let report .= substitute(string(a:arglist1), '^\[\(.*\)]$', '(\1)', '')
+            let report .= substitute(string(a:arglist1),
+                        \ '^\[\(.*\)]$', '(\1)', '')
             let report .= ' == '.a:funame2
-            let report .= substitute(string(a:arglist2), '^\[\(.*\)]$', '(\1)', '')
-            let report .= ' == '.substitute(string(result1), '\n', '\\n', 'g')
+            let report .= substitute(string(a:arglist2),
+                        \ '^\[\(.*\)]$', '(\1)', '')
+            let report .= ' == '
+                        \.substitute(string(result1), '\n', '\\n', 'g')
         else
             let report = 'Failed: '.a:funame1
-            let report .= substitute(string(a:arglist1), '^\[\(.*\)]$', '(\1)', '')
-            let report .= ' == '.substitute(string(result1), '\n', '\\n', 'g')
+            let report .= substitute(string(a:arglist1),
+                        \ '^\[\(.*\)]$', '(\1)', '')
+            let report .= ' == '
+                        \.substitute(string(result1), '\n', '\\n', 'g')
             let report .= ' != '.a:funame2
-            let report .= substitute(string(a:arglist2), '^\[\(.*\)]$', '(\1)', '')
-            let report .= ' == '.substitute(string(result2), '\n', '\\n', 'g')
+            let report .= substitute(string(a:arglist2),
+                        \ '^\[\(.*\)]$', '(\1)', '')
+            let report .= ' == '
+                        \.substitute(string(result2), '\n', '\\n', 'g')
         endif
     endif
     return report
@@ -60,10 +75,11 @@ function! vimim#ut#unit_test(utlist)
     for i in range(tlen)
         let argnum = len(a:utlist[i])
         if argnum == 3
-            let report = vimim#ut#assert(a:utlist[i][0], a:utlist[i][1], a:utlist[i][2])
+            let report = vimim#ut#assert(a:utlist[i][0],
+                        \ a:utlist[i][1], a:utlist[i][2])
         elseif argnum == 4
-            let report = vimim#ut#assert_functions(a:utlist[i][0], a:utlist[i][1],
-                        \   a:utlist[i][2], a:utlist[i][3])
+            let report = vimim#ut#assert_functions(a:utlist[i][0],
+                        \ a:utlist[i][1], a:utlist[i][2], a:utlist[i][3])
         else
             let report = 'List error: '.join(a:utlist[i], '|')
         endif
@@ -95,18 +111,20 @@ function! vimim#ut#self_test()
 
     let utlist += [['call', ['join', [split('abcdef', '\zs'), ', ']],
                 \               join(split('abcdef', '\zs'), ', ')  ]]
+    let utlist += [['join', [split('abcdef', '\zs'), ', '],
+                \       join(split('abcdef', '\zs'), ', ')  ]]
 
     let utlist += [['vimim#ut#assert', ['len', ['hello'], len('hello')],
                 \       vimim#ut#assert('len', ['hello'], len('hello')) ]]
-    let utlist += [['vimim#ut#assert', ['len', ['hello'], len('hell')],
-                \       vimim#ut#assert('len', ['hello'], len('hell'))  ]]
+    let utlist += [['vimim#ut#assert', ['len', ['hello'], len('helo')],
+                \       vimim#ut#assert('len', ['hello'], len('helo'))  ]]
     let utlist += [['vimim#ut#assert', ['leng', ['hello'], len('hello')],
                 \       vimim#ut#assert('leng', ['hello'], len('hello'))]]
 
     let utlist += [['vimim#ut#assert_functions', ['len', ['hello'], 'len', ['hello']],
                 \       vimim#ut#assert_functions('len', ['hello'], 'len', ['hello']) ]]
-    let utlist += [['vimim#ut#assert_functions', ['len', ['hello'], 'len', ['hell']],
-                \       vimim#ut#assert_functions('len', ['hello'], 'len', ['hell'])  ]]
+    let utlist += [['vimim#ut#assert_functions', ['len', ['hello'], 'len', ['helo']],
+                \       vimim#ut#assert_functions('len', ['hello'], 'len', ['helo'])  ]]
     let utlist += [['vimim#ut#assert_functions', ['leng', ['hello'], 'len', ['hello']],
                 \       vimim#ut#assert_functions('leng', ['hello'], 'len', ['hello'])]]
 
@@ -115,15 +133,15 @@ function! vimim#ut#self_test()
 
     let utlist += [['vimim#ut#unit_test', [[['len', ['hello'], len('hello')]]],
                 \       vimim#ut#unit_test([['len', ['hello'], len('hello')]])]]
-    let utlist += [['vimim#ut#unit_test', [[['len', ['hell'], len('hello')]]],
-                \       vimim#ut#unit_test([['len', ['hell'], len('hello')]])]]
+    let utlist += [['vimim#ut#unit_test', [[['len', ['helo'], len('hello')]]],
+                \       vimim#ut#unit_test([['len', ['helo'], len('hello')]])]]
     let utlist += [['vimim#ut#unit_test', [[['leng', ['hello'], len('hello')]]],
                 \       vimim#ut#unit_test([['leng', ['hello'], len('hello')]])]]
 
     let utlist += [['vimim#ut#unit_test', [[['len', ['hello'], 'len', ['hello']]]],
                 \       vimim#ut#unit_test([['len', ['hello'], 'len', ['hello']]])]]
-    let utlist += [['vimim#ut#unit_test', [[['len', ['hell'], 'len', ['hello']]]],
-                \       vimim#ut#unit_test([['len', ['hell'], 'len', ['hello']]])]]
+    let utlist += [['vimim#ut#unit_test', [[['len', ['helo'], 'len', ['hello']]]],
+                \       vimim#ut#unit_test([['len', ['helo'], 'len', ['hello']]])]]
     let utlist += [['vimim#ut#unit_test', [[['leng', ['hello'], 'len', ['hello']]]],
                 \       vimim#ut#unit_test([['leng', ['hello'], 'len', ['hello']]])]]
 

@@ -1,7 +1,7 @@
 "===========================================================================
 " Description:  Digit process for VimIM
 " Author:       LiTuX <suxpert AT gmail DOT com>
-" Last Change:  2014-03-05 00:44:05
+" Last Change:  2014-03-06 16:39:41
 " Version:      0.0.0
 "
 " Changes:
@@ -361,7 +361,7 @@ function! vimim#digits#number_styles(num)
             endfor
         endfor
     endfor
-    let result[a:num] = reltimestr(reltime(starttime))
+    let result[reltimestr(reltime(starttime))] = a:num
     return result
 endf
 

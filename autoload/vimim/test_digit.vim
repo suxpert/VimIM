@@ -1,5 +1,9 @@
+"==================================================================
+" unit test for digits.vim, this file is part of VimIM
+" Copyright (C) 2014 LiTuX, all wrongs reserved.
+"==================================================================
 
-let s:NumStyleDft = 0         " this is NOT a mask
+let s:NumStyleDft = 0           " this is NOT a mask
 
 let s:NumStyleBig = 1           " true: big style; false: small style;
 let s:NumStyleThd = 2           " true: use the third list if exist.
@@ -50,6 +54,7 @@ let s:list += [['vimim#digits#group', [1, s:NumStyleBig], '万']]
 let s:list += [['vimim#digits#group', [2, s:NumStyleBig], '亿']]
 echo vimim#ut#unit_test(s:list)
 
+" number convert
 let s:list = []
 let s:list += [['vimim#digits#digit', ['1002033', s:NumStyleDft],
             \   'vimim#digits#digit', ['1002033', s:NumStyleThd]    ]]
